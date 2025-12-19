@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertImageSchema, images } from './schema';
+import { imageSchema, insertImageSchema } from './schema';
 
 export const errorSchemas = {
   validation: z.object({
@@ -22,7 +22,7 @@ export const api = {
       // Input is FormData, so we don't strictly validate body schema here in the route definition
       // but we expect a file.
       responses: {
-        201: z.custom<typeof images.$inferSelect>(),
+        201: imageSchema,
         400: errorSchemas.validation,
       },
     },
@@ -30,14 +30,14 @@ export const api = {
       method: 'GET' as const,
       path: '/api/images',
       responses: {
-        200: z.array(z.custom<typeof images.$inferSelect>()),
+        200: z.array(imageSchema),
       },
     },
     get: {
       method: 'GET' as const,
       path: '/api/images/:id',
       responses: {
-        200: z.custom<typeof images.$inferSelect>(),
+        200: imageSchema,
         404: errorSchemas.notFound,
       },
     },

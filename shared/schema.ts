@@ -1,25 +1,22 @@
-import { pgTable, text, serial, timestamp, varchar } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const images = pgTable("images", {
-  id: serial("id").primaryKey(),
-  originalUrl: text("original_url").notNull(),
-  colorizedUrl: text("colorized_url"),
-  status: text("status", { enum: ["pending", "processing", "completed", "failed"] }).default("pending").notNull(),
-  errorMessage: text("error_message"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-export const insertImageSchema = createInsertSchema(images).omit({ 
-  id: true, 
-  colorizedUrl: true, 
-  status: true, 
-  errorMessage: true, 
-  createdAt: true 
-});
-
-export type Image = typeof images.$inferSelect;
-export type InsertImage = z.infer<typeof insertImageSchema>;
-
+// Image status enum
 export type ImageStatus = "pending" | "processing" | "completed" | "failed";
+
+// Image schema for validation
+export const imageSchema = z.object({
+  id: z.number(),
+  originalUrl: z.string(),
+  colorizedUrl: z.string().nullable().optional(),
+  status: z.enum(["pending", "processing", "completed", "failed"]),
+  errorMessage: z.string().nullable().optional(),
+  createdAt: z.string(), // ISO date string
+});
+
+// TypeScript type derived from schema
+export type Image = z.infer<typeof imageSchema>;
+
+// Schema for creating a new image (without auto-generated fields)
+export const insertImageSchema = z.object({
+  originalUrl: z.string(),
+});
