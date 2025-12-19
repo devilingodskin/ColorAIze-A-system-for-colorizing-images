@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import multer from "multer";
-import { colorizeImage } from "./replit_integrations/image/client";
+import { colorizeImage } from "./services/deoldify/client";
 
 const upload = multer({ 
   storage: multer.memoryStorage(),
