@@ -6,7 +6,10 @@ sqlalchemy>=2.0.23
 pillow>=10.1.0
 torch>=2.1.0
 torchvision>=0.16.0
-deoldify>=0.1.1
+
+# DeOldify - install from GitHub (not PyPI)
+# Run separately: pip install git+https://github.com/jantic/DeOldify.git
+# Or use: deoldify==0.0.1 (older version from PyPI)
 
 # Development dependencies
 pytest>=7.4.3

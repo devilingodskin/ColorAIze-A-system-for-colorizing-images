@@ -27,4 +27,5 @@ class Image(Base):
     status = Column(SQLEnum(ImageStatus), default=ImageStatus.PENDING, nullable=False)
     error_message = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    public_token = Column(String, nullable=True, index=True)  # Secure public access token (unique via index)
 

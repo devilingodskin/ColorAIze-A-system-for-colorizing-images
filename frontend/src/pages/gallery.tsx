@@ -10,7 +10,7 @@ export default function Gallery() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary" />
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900" />
       </div>
     );
   }
@@ -18,7 +18,7 @@ export default function Gallery() {
   if (error) {
     return (
       <div className="text-center py-20">
-        <p className="text-red-400">Failed to load gallery data.</p>
+        <p className="text-red-500">Не удалось загрузить галерею.</p>
       </div>
     );
   }
@@ -26,33 +26,33 @@ export default function Gallery() {
   if (!images || images.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] text-center space-y-4">
-        <div className="w-24 h-24 rounded-full bg-muted/50 flex items-center justify-center">
-          <ImageOff className="w-10 h-10 text-muted-foreground" />
+        <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center">
+          <ImageOff className="w-10 h-10 text-gray-400" />
         </div>
         <div>
-          <h2 className="text-2xl font-bold font-display">No Images Yet</h2>
-          <p className="text-muted-foreground mt-2">Upload your first image to start building your gallery.</p>
+          <h2 className="text-2xl font-bold font-display text-gray-900">Пока нет изображений</h2>
+          <p className="text-gray-600 mt-2">Загрузите первое изображение, чтобы начать создавать галерею.</p>
         </div>
-        <Link href="/" className="px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
-          Start Uploading
+        <Link href="/" className="px-6 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors shadow-lg">
+          Начать загрузку
         </Link>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold font-display">Gallery</h1>
-          <p className="text-muted-foreground mt-1">Archive of processed images</p>
+          <h1 className="text-2xl sm:text-3xl font-bold font-display text-gray-900">Галерея</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Архив обработанных изображений</p>
         </div>
-        <Link href="/" className="hidden sm:flex items-center gap-2 text-primary hover:underline">
-          New Upload <ArrowRight className="w-4 h-4" />
+        <Link href="/" className="flex items-center gap-2 px-4 py-2 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors text-sm sm:text-base shadow-lg">
+          Новая загрузка <ArrowRight className="w-4 h-4" />
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         {images.map((image, i) => (
           <motion.div
             key={image.id}
@@ -61,8 +61,8 @@ export default function Gallery() {
             transition={{ delay: i * 0.05 }}
           >
             <Link href={`/result/${image.id}`} className="group block h-full">
-              <div className="bg-card rounded-xl border border-border overflow-hidden hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 h-full flex flex-col">
-                <div className="aspect-square relative overflow-hidden bg-muted/30">
+              <div className="liquid-glass rounded-2xl border border-gray-200 overflow-hidden hover:border-gray-300 transition-all duration-300 hover:shadow-xl h-full flex flex-col">
+                <div className="aspect-square relative overflow-hidden bg-gray-100">
                   <img
                     src={image.colorizedUrl || image.originalUrl}
                     alt="Gallery thumbnail"
@@ -79,9 +79,9 @@ export default function Gallery() {
                 </div>
                 
                 <div className="p-4 flex-1 flex flex-col justify-end">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between text-xs text-gray-600">
                     <span>ID: #{image.id}</span>
-                    <span>{new Date(image.createdAt).toLocaleDateString()}</span>
+                    <span>{new Date(image.createdAt).toLocaleDateString('ru-RU')}</span>
                   </div>
                 </div>
               </div>

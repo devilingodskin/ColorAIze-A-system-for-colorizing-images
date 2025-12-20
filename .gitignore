@@ -65,6 +65,66 @@ ml/data/processed/*
 !ml/data/raw/.gitkeep
 !ml/data/processed/.gitkeep
 
+# DeOldify repository (cloned locally)
+deoldify_repo/
+
+# Logs
+*.log
+backend.log
+frontend.log
+*.log.*
+
+# Local system files
+.local/
+.local/**
+
+# Python virtual environments
+venv/
+.venv/
+env/
+ENV/
+backend/venv/
+backend/.venv/
+
+# Node modules
+node_modules/
+frontend/node_modules/
+
+# Build outputs
+dist/
+build/
+frontend/dist/
+backend/dist/
+*.egg-info/
+
+# Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.pytest_cache/
+.mypy_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
 # OS
 .DS_Store
 Thumbs.db

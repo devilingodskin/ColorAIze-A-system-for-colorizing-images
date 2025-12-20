@@ -8,6 +8,7 @@ import { Layout } from "@/components/layout";
 import Home from "@/pages/home";
 import Gallery from "@/pages/gallery";
 import Result from "@/pages/result";
+import PublicResult from "@/pages/public-result";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -17,6 +18,7 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/gallery" component={Gallery} />
         <Route path="/result/:id" component={Result} />
+        <Route path="/public/:token" component={PublicResult} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

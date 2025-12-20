@@ -1,15 +1,13 @@
 import { useRoute } from "wouter";
-import { useImage } from "@/hooks/use-images";
 import { ImageCompare } from "@/components/image-compare";
 import { StatusBadge } from "@/components/status-badge";
 import { ImageViewer } from "@/components/image-viewer";
-import { useShare } from "@/hooks/use-share";
-import { useToast } from "@/hooks/use-toast";
 import { Download, Share2, ArrowLeft, RefreshCw, AlertTriangle, Eye, Copy, ExternalLink, Maximize2, Info } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,15 +16,54 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export default function Result() {
-  const [, params] = useRoute("/result/:id");
-  const id = parseInt(params?.id || "0");
-  const { data: image, isLoading, error } = useImage(id);
-  const { share, isSharing } = useShare();
+// API base URL
+const API_BASE_URL = (import.meta.env?.VITE_API_URL as string | undefined) || "http://localhost:8000";
+
+interface PublicImage {
+  id: number;
+  originalUrl: string;
+  colorizedUrl: string | null;
+  status: "pending" | "processing" | "completed" | "failed";
+  errorMessage: string | null;
+  createdAt: string;
+}
+
+export default function PublicResult() {
+  const [, params] = useRoute("/public/:token");
+  const token = params?.token || "";
   const { toast } = useToast();
+  const [image, setImage] = useState<PublicImage | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [viewerImage, setViewerImage] = useState<string | null>(null);
   const [viewerTitle, setViewerTitle] = useState("");
   const [viewerOpen, setViewerOpen] = useState(false);
+
+  useEffect(() => {
+    const fetchImage = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/public/${token}`);
+        if (!res.ok) {
+          throw new Error("Изображение не найдено");
+        }
+        const data = await res.json();
+        setImage(data);
+      } catch (err: any) {
+        setError(err.message || "Ошибка загрузки");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (token) {
+      fetchImage();
+      // Poll for updates if processing
+      const interval = setInterval(() => {
+        fetchImage();
+      }, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [token]);
 
   if (isLoading) {
     return (
@@ -42,7 +79,8 @@ export default function Result() {
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <AlertTriangle className="w-12 h-12 text-red-500" />
         <h2 className="text-xl font-bold text-gray-900">Изображение не найдено</h2>
-        <Link href="/gallery" className="text-gray-900 hover:underline">Вернуться в галерею</Link>
+        <p className="text-gray-600">Возможно, ссылка неверна или изображение было удалено.</p>
+        <Link href="/" className="text-gray-900 hover:underline">Вернуться на главную</Link>
       </div>
     );
   }
@@ -50,20 +88,6 @@ export default function Result() {
   const isProcessing = image.status === "pending" || image.status === "processing";
   const isFailed = image.status === "failed";
   const isComplete = image.status === "completed";
-
-  const handleShare = () => {
-    // Use public token URL for secure sharing
-    const shareUrl = image.publicToken 
-      ? `${window.location.origin}/public/${image.publicToken}`
-      : window.location.href;
-    
-    share({
-      title: `Раскрашенное изображение #${image.id}`,
-      text: "Посмотрите на это раскрашенное изображение, созданное с помощью AI!",
-      url: shareUrl,
-      imageUrl: image.colorizedUrl || undefined,
-    });
-  };
 
   const handleViewOriginal = () => {
     setViewerImage(image.originalUrl);
@@ -90,37 +114,9 @@ export default function Result() {
     document.body.removeChild(link);
   };
 
-  const handleCopyImage = async () => {
-    if (!image.colorizedUrl) return;
-    
-    try {
-      const response = await fetch(image.colorizedUrl);
-      const blob = await response.blob();
-      await navigator.clipboard.write([
-        new ClipboardItem({ [blob.type]: blob })
-      ]);
-      toast({
-        title: "Успешно!",
-        description: "Изображение скопировано в буфер обмена",
-      });
-    } catch (err) {
-      console.error("Failed to copy image:", err);
-      toast({
-        title: "Ошибка",
-        description: "Не удалось скопировать изображение",
-        variant: "destructive",
-      });
-    }
-  };
-
   const handleCopyLink = async () => {
     try {
-      // Use public token URL for secure sharing
-      const shareUrl = image.publicToken 
-        ? `${window.location.origin}/public/${image.publicToken}`
-        : window.location.href;
-      
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(window.location.href);
       toast({
         title: "Ссылка скопирована!",
         description: "Публичная ссылка скопирована в буфер обмена",
@@ -139,11 +135,11 @@ export default function Result() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-2">
-          <Link href="/gallery" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors mb-2">
-            <ArrowLeft className="w-4 h-4 mr-1" /> Вернуться в галерею
+          <Link href="/" className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors mb-2">
+            <ArrowLeft className="w-4 h-4 mr-1" /> На главную
           </Link>
           <div className="flex items-center gap-4">
-            <h1 className="text-3xl font-bold font-display text-gray-900">Результат #{image.id}</h1>
+            <h1 className="text-3xl font-bold font-display text-gray-900">Публичный просмотр</h1>
             <StatusBadge status={image.status} />
           </div>
           <p className="text-gray-600 text-sm">
@@ -167,10 +163,6 @@ export default function Result() {
                   <DropdownMenuItem onClick={() => handleDownload("png")}>
                     <Download className="w-4 h-4 mr-2" /> Скачать как PNG
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleCopyImage}>
-                    <Copy className="w-4 h-4 mr-2" /> Копировать изображение
-                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
@@ -187,15 +179,6 @@ export default function Result() {
                   <DropdownMenuItem onClick={handleViewColorized}>
                     <Maximize2 className="w-4 h-4 mr-2" /> Раскрашенное
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => window.open(image.originalUrl, "_blank")}>
-                    <ExternalLink className="w-4 h-4 mr-2" /> Открыть оригинал в новой вкладке
-                  </DropdownMenuItem>
-                  {image.colorizedUrl && (
-                    <DropdownMenuItem onClick={() => window.open(image.colorizedUrl!, "_blank")}>
-                      <ExternalLink className="w-4 h-4 mr-2" /> Открыть результат в новой вкладке
-                    </DropdownMenuItem>
-                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </>
@@ -203,23 +186,14 @@ export default function Result() {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2" disabled={isSharing}>
-                <Share2 className="w-4 h-4" /> {isSharing ? "Отправка..." : "Поделиться"}
+              <Button variant="outline" className="gap-2">
+                <Share2 className="w-4 h-4" /> Поделиться
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleShare}>
-                <Share2 className="w-4 h-4 mr-2" /> Поделиться через...
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleCopyLink}>
                 <Copy className="w-4 h-4 mr-2" /> Копировать ссылку
               </DropdownMenuItem>
-              {isComplete && image.colorizedUrl && (
-                <DropdownMenuItem onClick={handleCopyImage}>
-                  <Copy className="w-4 h-4 mr-2" /> Копировать изображение
-                </DropdownMenuItem>
-              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -251,7 +225,7 @@ export default function Result() {
             </div>
             <h3 className="text-xl font-semibold text-red-500">Ошибка раскрашивания</h3>
             <p className="text-gray-600 max-w-md">
-              {image.errorMessage || "Произошла неожиданная ошибка при обработке. Попробуйте снова с другим изображением."}
+              {image.errorMessage || "Произошла неожиданная ошибка при обработке."}
             </p>
           </div>
         )}
@@ -268,7 +242,6 @@ export default function Result() {
               afterImage={image.colorizedUrl!} 
               className="w-full shadow-2xl rounded-2xl border border-gray-200"
             />
-            
 
             {/* Image Info */}
             <div className="mt-4 p-4 rounded-xl bg-blue-50 border border-blue-200">
@@ -304,3 +277,4 @@ export default function Result() {
     </div>
   );
 }
+

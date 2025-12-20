@@ -1,16 +1,28 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl } from "@shared/routes";
-import { type Image } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+
+// API base URL
+const API_BASE_URL = (import.meta.env?.VITE_API_URL as string | undefined) || "http://localhost:8000";
+
+// Image type
+export interface Image {
+  id: number;
+  originalUrl: string;
+  colorizedUrl: string | null;
+  status: "pending" | "processing" | "completed" | "failed";
+  errorMessage: string | null;
+  createdAt: string;
+  publicToken?: string | null;
+}
 
 // Fetch all images
 export function useImages() {
   return useQuery({
-    queryKey: [api.images.list.path],
-    queryFn: async () => {
-      const res = await fetch(api.images.list.path);
+    queryKey: ["images"],
+    queryFn: async (): Promise<Image[]> => {
+      const res = await fetch(`${API_BASE_URL}/api/images`);
       if (!res.ok) throw new Error("Failed to fetch images");
-      return api.images.list.responses[200].parse(await res.json());
+      return await res.json();
     },
     // Refresh occasionally to check for updates
     refetchInterval: 5000, 
@@ -20,12 +32,11 @@ export function useImages() {
 // Fetch single image with smart polling
 export function useImage(id: number) {
   return useQuery({
-    queryKey: [api.images.get.path, id],
-    queryFn: async () => {
-      const url = buildUrl(api.images.get.path, { id });
-      const res = await fetch(url);
+    queryKey: ["images", id],
+    queryFn: async (): Promise<Image> => {
+      const res = await fetch(`${API_BASE_URL}/api/images/${id}`);
       if (!res.ok) throw new Error("Failed to fetch image");
-      return api.images.get.responses[200].parse(await res.json());
+      return await res.json();
     },
     // Poll faster if status is pending or processing
     refetchInterval: (query) => {
@@ -41,38 +52,79 @@ export function useUploadImage() {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append("image", file);
+    mutationFn: async (file: File): Promise<Image> => {
+      // Validate file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        throw new Error("Размер файла превышает 10MB");
+      }
 
-      const res = await fetch(api.images.upload.path, {
-        method: api.images.upload.method,
-        body: formData,
-      });
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        throw new Error("Файл должен быть изображением");
+      }
+
+      const formData = new FormData();
+      // FastAPI expects parameter name "file" (matches UploadFile = File(...))
+      formData.append("file", file);
+
+      let res: Response;
+      try {
+        // Add timeout for upload (30 seconds)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000);
+        
+        res = await fetch(`${API_BASE_URL}/api/images`, {
+          method: "POST",
+          body: formData,
+          signal: controller.signal,
+          // Don't set Content-Type header - browser will set it with boundary for FormData
+        });
+        
+        clearTimeout(timeoutId);
+      } catch (networkError: any) {
+        if (networkError.name === 'AbortError') {
+          throw new Error("Превышено время ожидания. Попробуйте еще раз.");
+        }
+        throw new Error("Ошибка сети. Проверьте подключение к интернету.");
+      }
 
       if (!res.ok) {
         // Try to parse validation error
+        let errorMessage = "Ошибка загрузки изображения";
         try {
           const errorData = await res.json();
-          throw new Error(errorData.message || "Upload failed");
+          errorMessage = errorData.detail || errorData.message || errorMessage;
         } catch (e) {
-          throw new Error("Failed to upload image");
+          // If JSON parsing fails, try to get text
+          try {
+            const errorText = await res.text();
+            if (errorText) errorMessage = errorText;
+          } catch (textError) {
+            // Use default error message
+          }
         }
+        throw new Error(errorMessage);
       }
 
-      return api.images.upload.responses[201].parse(await res.json());
+      try {
+        const data = await res.json();
+        return data;
+      } catch (jsonError) {
+        throw new Error("Ошибка при обработке ответа сервера");
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.images.list.path] });
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["images"] });
       toast({
-        title: "Upload Successful",
-        description: "Your image is now queued for colorization.",
+        title: "Загрузка успешна",
+        description: "Ваше изображение поставлено в очередь на колоризацию.",
       });
     },
     onError: (error) => {
+      console.error("Upload error:", error);
       toast({
-        title: "Upload Failed",
-        description: error.message,
+        title: "Ошибка загрузки",
+        description: error.message || "Неизвестная ошибка при загрузке изображения",
         variant: "destructive",
       });
     },

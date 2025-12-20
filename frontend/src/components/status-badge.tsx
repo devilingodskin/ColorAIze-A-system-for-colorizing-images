@@ -3,22 +3,29 @@ import { Loader2, CheckCircle2, XCircle, Clock } from "lucide-react";
 
 type Status = "pending" | "processing" | "completed" | "failed";
 
+const statusLabels: Record<Status, string> = {
+  pending: "Ожидание",
+  processing: "Обработка",
+  completed: "Готово",
+  failed: "Ошибка",
+};
+
 export function StatusBadge({ status }: { status: Status }) {
   return (
     <div className={clsx(
-      "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border uppercase tracking-wider",
+      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border uppercase tracking-wider",
       {
-        "bg-yellow-500/10 text-yellow-500 border-yellow-500/20": status === "pending",
-        "bg-blue-500/10 text-blue-500 border-blue-500/20": status === "processing",
-        "bg-green-500/10 text-green-500 border-green-500/20": status === "completed",
-        "bg-red-500/10 text-red-500 border-red-500/20": status === "failed",
+        "bg-yellow-50 text-yellow-700 border-yellow-200": status === "pending",
+        "bg-blue-50 text-blue-700 border-blue-200": status === "processing",
+        "bg-green-50 text-green-700 border-green-200": status === "completed",
+        "bg-red-50 text-red-700 border-red-200": status === "failed",
       }
     )}>
       {status === "pending" && <Clock className="w-3 h-3" />}
       {status === "processing" && <Loader2 className="w-3 h-3 animate-spin" />}
       {status === "completed" && <CheckCircle2 className="w-3 h-3" />}
       {status === "failed" && <XCircle className="w-3 h-3" />}
-      {status}
+      {statusLabels[status]}
     </div>
   );
 }

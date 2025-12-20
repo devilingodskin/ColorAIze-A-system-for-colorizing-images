@@ -40,7 +40,7 @@ export function ImageCompare({ beforeImage, afterImage, className = "" }: ImageC
   return (
     <div 
       ref={containerRef}
-      className={`relative w-full aspect-video overflow-hidden rounded-xl bg-muted border border-border select-none cursor-ew-resize group ${className}`}
+      className={`relative w-full aspect-video overflow-hidden rounded-lg sm:rounded-xl bg-muted/50 border border-border select-none cursor-ew-resize group ${className}`}
       onMouseDown={handleMouseDown}
     >
       {/* Before Image (Background) */}
