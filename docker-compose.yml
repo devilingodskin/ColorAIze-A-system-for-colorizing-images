@@ -1,22 +1,51 @@
-version: '3.8'
-
 services:
+  # PostgreSQL database
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-colorizer}
+      POSTGRES_USER: ${POSTGRES_USER:-colorizer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_this_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-colorizer}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Main application
   app:
     build: .
     ports:
-      - "8000:8000"
+      - "${PORT:-8000}:8000"
     environment:
-      - DATABASE_URL=sqlite:///./colorizer.db
+      # Database
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-colorizer}:${POSTGRES_PASSWORD:-change_this_password}@db:5432/${POSTGRES_DB:-colorizer}
+      # Server
       - PORT=8000
       - HOST=0.0.0.0
+      # Security
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+      - TRUSTED_HOSTS=${TRUSTED_HOSTS:-*}
+      - ENABLE_HSTS=${ENABLE_HSTS:-false}
+      # DeOldify
+      - DEOLDIFY_MODEL_PATH=/app/ml/models/ColorizeStable_gen.pth
     volumes:
-      - ./ml/models:/app/ml/models
+      - ./ml/models:/app/ml/models:ro
       - ./backend/storage:/app/backend/storage
-      - ./backend/colorizer.db:/app/backend/colorizer.db
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
+
+volumes:
+  postgres_data:
 

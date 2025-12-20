@@ -15,6 +15,7 @@ import logging
 from .database import get_db, init_db
 from .models import Image, ImageStatus
 from .colorizer import get_colorizer
+from .auth import get_session_id, generate_session_id
 import secrets
 import string
 
@@ -54,9 +55,28 @@ from fastapi.responses import FileResponse
 import os
 
 # Check if frontend build exists
-frontend_dist = os.path.join(os.path.dirname(os.path.dirname(__file__)), "..", "frontend", "dist")
+# In Docker: /app/frontend/dist, in local dev: ../frontend/dist
+# Try Docker path first, then local path
+frontend_dist = "/app/frontend/dist"
+if not os.path.exists(frontend_dist):
+    # Fallback to local development path
+    frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend", "dist")
+
 if os.path.exists(frontend_dist):
-    app.mount("/static", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="static")
+    # Check for assets in different possible locations
+    assets_dir = None
+    possible_assets_paths = [
+        os.path.join(frontend_dist, "assets"),  # Standard Vite build
+        os.path.join(frontend_dist, "public", "assets"),  # Alternative structure
+    ]
+    
+    for path in possible_assets_paths:
+        if os.path.exists(path):
+            assets_dir = path
+            break
+    
+    if assets_dir:
+        app.mount("/static", StaticFiles(directory=assets_dir), name="static")
     
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):
@@ -66,9 +86,16 @@ if os.path.exists(frontend_dist):
             raise HTTPException(status_code=404, detail="Not found")
         
         # Serve index.html for all routes (SPA routing)
-        index_path = os.path.join(frontend_dist, "index.html")
-        if os.path.exists(index_path):
-            return FileResponse(index_path)
+        # Check multiple possible locations for index.html
+        index_paths = [
+            os.path.join(frontend_dist, "index.html"),
+            os.path.join(frontend_dist, "public", "index.html"),
+        ]
+        
+        for index_path in index_paths:
+            if os.path.exists(index_path):
+                return FileResponse(index_path)
+        
         raise HTTPException(status_code=404, detail="Frontend not found")
 
 # Thread pool for async colorization
@@ -95,10 +122,38 @@ async def root():
     return {"message": "Image Colorizer API", "status": "running"}
 
 
+@app.post("/api/session")
+async def create_session():
+    """
+    Create a new session.
+    Returns a session ID that should be used for all subsequent requests.
+    Frontend should store this in localStorage and send it in X-Session-ID header.
+    """
+    session_id = generate_session_id()
+    return {
+        "sessionId": session_id,
+        "message": "Session created. Use this sessionId in X-Session-ID header for all requests."
+    }
+
+
 @app.get("/api/images")
-async def list_images(db: Session = Depends(get_db)):
-    """Get all images."""
-    images = db.query(Image).order_by(Image.created_at.desc()).all()
+async def list_images(
+    db: Session = Depends(get_db),
+    session_id: str = Depends(get_session_id)
+):
+    """
+    Get all images for the current session.
+    Only returns images that belong to the session_id.
+    
+    Security: This endpoint filters images by session_id, ensuring users can only
+    see their own images. Images from other sessions are never returned.
+    """
+    # Security: Filter images by session_id - privacy by default
+    # Users can only see images they created with their session
+    images = db.query(Image).filter(
+        Image.session_id == session_id
+    ).order_by(Image.created_at.desc()).all()
+    
     return [
         {
             "id": img.id,
@@ -114,10 +169,35 @@ async def list_images(db: Session = Depends(get_db)):
 
 
 @app.get("/api/images/{image_id}")
-async def get_image(image_id: int, db: Session = Depends(get_db)):
-    """Get a single image by ID."""
-    image = db.query(Image).filter(Image.id == image_id).first()
+async def get_image(
+    image_id: int,
+    db: Session = Depends(get_db),
+    session_id: str = Depends(get_session_id)
+):
+    """
+    Get a single image by ID.
+    Only accessible if the image belongs to the current session.
+    
+    Security: This endpoint enforces privacy by checking that the requested image
+    belongs to the current session_id. If the image exists but belongs to another
+    session, a 404 error is returned (to prevent information disclosure).
+    
+    Example:
+    - User A creates image with ID 16 (session_id: "abc123")
+    - User B tries to access /api/images/16 with session_id: "xyz789"
+    - Result: 404 "Image not found" (even though image 16 exists)
+    """
+    # Security check: Only return image if it belongs to the requesting session
+    # This prevents unauthorized access to other users' images
+    image = db.query(Image).filter(
+        Image.id == image_id,
+        Image.session_id == session_id  # Privacy check - only owner can access
+    ).first()
+    
     if not image:
+        # Security: Don't reveal if image exists but belongs to another session
+        # This prevents information disclosure attacks
+        logger.warning(f"Access denied: Image {image_id} requested by session {session_id[:8]}...")
         raise HTTPException(status_code=404, detail="Image not found")
     
     return {
@@ -151,9 +231,13 @@ async def get_image_by_token(public_token: str, db: Session = Depends(get_db)):
 @app.post("/api/images")
 async def upload_image(
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    session_id: str = Depends(get_session_id)
 ):
-    """Upload and colorize an image."""
+    """
+    Upload and colorize an image.
+    Image is automatically linked to the current session_id for privacy.
+    """
     # Validate file type
     if not file.content_type or not file.content_type.startswith("image/"):
         raise HTTPException(status_code=400, detail="File must be an image")
@@ -170,12 +254,13 @@ async def upload_image(
         if len(file_content) > 10 * 1024 * 1024:
             raise HTTPException(status_code=400, detail="File size exceeds 10MB limit")
         
-        # Create database record with secure public token
+        # Create database record with secure public token and session_id
         public_token = generate_public_token()
         db_image = Image(
             original_url=original_url,
             status=ImageStatus.PENDING,  # Start with PENDING, not PROCESSING
-            public_token=public_token
+            public_token=public_token,
+            session_id=session_id  # Link image to session for privacy
         )
         db.add(db_image)
         db.commit()

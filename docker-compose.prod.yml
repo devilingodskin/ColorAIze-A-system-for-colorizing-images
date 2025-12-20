@@ -1,0 +1,70 @@
+version: '3.8'
+
+# Production Docker Compose configuration
+# Usage: docker-compose -f docker-compose.prod.yml up -d
+
+services:
+  # PostgreSQL database
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # MUST be set in .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Security: Don't expose database port externally
+    # ports:
+    #   - "5432:5432"
+
+  # Main application
+  app:
+    build: .
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      # Database - REQUIRED
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      # Server
+      - PORT=8000
+      - HOST=0.0.0.0
+      # Security - REQUIRED for production
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}  # MUST be set (not *)
+      - TRUSTED_HOSTS=${TRUSTED_HOSTS}  # MUST be set (not *)
+      - ENABLE_HSTS=${ENABLE_HSTS:-true}  # Enable for HTTPS
+      # Database connection pooling
+      - DB_POOL_SIZE=${DB_POOL_SIZE:-10}
+      - DB_MAX_OVERFLOW=${DB_MAX_OVERFLOW:-20}
+      # DeOldify
+      - DEOLDIFY_MODEL_PATH=/app/ml/models/ColorizeStable_gen.pth
+    volumes:
+      - ./ml/models:/app/ml/models:ro
+      - ./backend/storage:/app/backend/storage
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local

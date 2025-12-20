@@ -19,8 +19,8 @@ backend/storage/*
 backend/colorizer.db
 ml/models/*
 !ml/models/.gitkeep
+!ml/models/*.pth
 deoldify_repo/
-*.pth
 dist
 build
 

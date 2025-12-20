@@ -28,4 +28,5 @@ class Image(Base):
     error_message = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     public_token = Column(String, nullable=True, index=True)  # Secure public access token (unique via index)
+    session_id = Column(String, nullable=False, index=True)  # Session ID for privacy - links image to user session
 

@@ -1,8 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { getApiSessionId } from "@/lib/session";
 
 // API base URL
 const API_BASE_URL = (import.meta.env?.VITE_API_URL as string | undefined) || "http://localhost:8000";
+
+/**
+ * Get headers with session ID for API requests.
+ */
+function getApiHeaders(): HeadersInit {
+  return {
+    "X-Session-ID": getApiSessionId(),
+  };
+}
 
 // Image type
 export interface Image {
@@ -20,8 +30,15 @@ export function useImages() {
   return useQuery({
     queryKey: ["images"],
     queryFn: async (): Promise<Image[]> => {
-      const res = await fetch(`${API_BASE_URL}/api/images`);
-      if (!res.ok) throw new Error("Failed to fetch images");
+      const res = await fetch(`${API_BASE_URL}/api/images`, {
+        headers: getApiHeaders(),
+      });
+      if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Session required. Please refresh the page.");
+        }
+        throw new Error("Failed to fetch images");
+      }
       return await res.json();
     },
     // Refresh occasionally to check for updates
@@ -34,8 +51,18 @@ export function useImage(id: number) {
   return useQuery({
     queryKey: ["images", id],
     queryFn: async (): Promise<Image> => {
-      const res = await fetch(`${API_BASE_URL}/api/images/${id}`);
-      if (!res.ok) throw new Error("Failed to fetch image");
+      const res = await fetch(`${API_BASE_URL}/api/images/${id}`, {
+        headers: getApiHeaders(),
+      });
+      if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Session required. Please refresh the page.");
+        }
+        if (res.status === 404) {
+          throw new Error("Image not found or access denied");
+        }
+        throw new Error("Failed to fetch image");
+      }
       return await res.json();
     },
     // Poll faster if status is pending or processing
@@ -75,7 +102,8 @@ export function useUploadImage() {
         
         res = await fetch(`${API_BASE_URL}/api/images`, {
           method: "POST",
-        body: formData,
+          body: formData,
+          headers: getApiHeaders(),
           signal: controller.signal,
           // Don't set Content-Type header - browser will set it with boundary for FormData
         });

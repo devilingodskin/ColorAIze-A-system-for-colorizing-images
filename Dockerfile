@@ -24,22 +24,26 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     git \
     build-essential \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy backend files
 COPY backend/requirements.txt ./backend/
 RUN pip install --no-cache-dir -r backend/requirements.txt
 
+# Install DeOldify from GitHub (required for colorization)
+# Install additional dependencies needed for DeOldify build
+RUN pip install --no-cache-dir setuptools wheel
+RUN pip install --no-cache-dir git+https://github.com/jantic/DeOldify.git || \
+    (pip install --no-cache-dir deoldify==0.0.1 || echo "DeOldify installation failed, but continuing...")
+
 # Copy backend code
 COPY backend/ ./backend/
 
 # Copy ML models directory (if exists)
 COPY ml/ ./ml/
-
-# Copy DeOldify repo (if exists)
-COPY deoldify_repo/ ./deoldify_repo/
 
 # Copy built frontend
 COPY --from=frontend-builder /app/frontend/dist ./frontend/dist

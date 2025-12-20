@@ -4,6 +4,8 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout";
+import { getSessionId } from "@/lib/session";
+import { useEffect } from "react";
 
 import Home from "@/pages/home";
 import Gallery from "@/pages/gallery";
@@ -12,6 +14,13 @@ import PublicResult from "@/pages/public-result";
 import NotFound from "@/pages/not-found";
 
 function Router() {
+  // Initialize session on app load
+  useEffect(() => {
+    // Generate session ID if not exists
+    const sessionId = getSessionId();
+    console.log("Session initialized:", sessionId.substring(0, 8) + "...");
+  }, []);
+
   return (
     <Layout>
       <Switch>
