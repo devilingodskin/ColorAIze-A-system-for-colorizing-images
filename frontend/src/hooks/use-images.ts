@@ -75,7 +75,7 @@ export function useUploadImage() {
         
         res = await fetch(`${API_BASE_URL}/api/images`, {
           method: "POST",
-          body: formData,
+        body: formData,
           signal: controller.signal,
           // Don't set Content-Type header - browser will set it with boundary for FormData
         });
@@ -101,8 +101,8 @@ export function useUploadImage() {
             if (errorText) errorMessage = errorText;
           } catch (textError) {
             // Use default error message
-          }
         }
+      }
         throw new Error(errorMessage);
       }
 

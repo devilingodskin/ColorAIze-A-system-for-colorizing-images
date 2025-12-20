@@ -281,7 +281,7 @@ export default function Result() {
                     <p>Создано: {new Date(image.createdAt).toLocaleString('ru-RU')}</p>
                     <p>Статус: {image.status === "completed" ? "Обработано" : image.status}</p>
                   </div>
-                </div>
+              </div>
               </div>
             </div>
           </motion.div>

@@ -22,7 +22,7 @@ export default function Home() {
       uploadImage(file, {
         onSuccess: (data) => {
           if (data && data.id) {
-            setLocation(`/result/${data.id}`);
+          setLocation(`/result/${data.id}`);
           }
         },
         onError: (error) => {
