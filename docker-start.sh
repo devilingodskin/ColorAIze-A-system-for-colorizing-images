@@ -15,7 +15,7 @@ if ! docker info > /dev/null 2>&1; then
 fi
 
 # Проверка наличия модели (опционально)
-if [ ! -f "ml/models/ColorizeStable_gen.pth" ] && [ ! -f "ml/models/ColorizeArtistic_gen.pth" ]; then
+if [ ! -f "ml/models/ColorAize_weights.pth" ] && [ ! -f "ml/models/ColorizeArtistic_gen.pth" ]; then
     echo "⚠️  Модель DeOldify не найдена в ml/models/"
     echo "   Приложение будет работать, но раскрашивание будет недоступно"
     echo "   Модель будет скопирована в контейнер из локальной папки ml/models/"

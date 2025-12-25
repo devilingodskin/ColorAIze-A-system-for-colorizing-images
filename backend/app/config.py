@@ -14,11 +14,11 @@ DATABASE_URL = os.getenv(
 )
 
 # DeOldify model
-# Default: ColorizeStable_gen.pth (stable model - more realistic colors)
+# Default: ColorAize_weights.pth (stable model - more realistic colors)
 # Alternative: ColorizeArtistic_gen.pth (artistic model - more vibrant colors)
 DEOLDIFY_MODEL_PATH = os.getenv(
     "DEOLDIFY_MODEL_PATH",
-    str(Path(__file__).parent.parent.parent / "ml" / "models" / "ColorizeStable_gen.pth")
+    str(Path(__file__).parent.parent.parent / "ml" / "models" / "ColorAize_weights.pth")
 )
 
 # Server

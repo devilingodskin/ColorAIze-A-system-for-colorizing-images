@@ -31,7 +31,7 @@ services:
       - TRUSTED_HOSTS=${TRUSTED_HOSTS:-*}
       - ENABLE_HSTS=${ENABLE_HSTS:-false}
       # DeOldify
-      - DEOLDIFY_MODEL_PATH=/app/ml/models/ColorizeStable_gen.pth
+      - DEOLDIFY_MODEL_PATH=/app/ml/models/ColorAize_weights.pth
     volumes:
       - ./ml/models:/app/ml/models:ro
       - ./backend/storage:/app/backend/storage

@@ -38,7 +38,7 @@ class ImageColorizer:
         self.render_factor = render_factor
         self.model_path = model_path or os.getenv(
             "DEOLDIFY_MODEL_PATH",
-            os.path.join(os.path.dirname(__file__), "../../ml/models/ColorizeStable_gen.pth")
+            os.path.join(os.path.dirname(__file__), "../../ml/models/ColorAize_weights.pth")
         )
         self.colorizer = None
         self.device = None

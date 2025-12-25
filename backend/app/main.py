@@ -76,7 +76,8 @@ if os.path.exists(frontend_dist):
             break
     
     if assets_dir:
-        app.mount("/static", StaticFiles(directory=assets_dir), name="static")
+        # Mount assets at /assets so Vite paths like /assets/xxx.js work
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
     
     @app.get("/{full_path:path}")
     async def serve_frontend(full_path: str):

@@ -44,7 +44,7 @@ services:
       - DB_POOL_SIZE=${DB_POOL_SIZE:-10}
       - DB_MAX_OVERFLOW=${DB_MAX_OVERFLOW:-20}
       # DeOldify
-      - DEOLDIFY_MODEL_PATH=/app/ml/models/ColorizeStable_gen.pth
+      - DEOLDIFY_MODEL_PATH=/app/ml/models/ColorAize_weights.pth
     volumes:
       - ./ml/models:/app/ml/models:ro
       - ./backend/storage:/app/backend/storage

@@ -56,7 +56,7 @@ Image-Colorizer-AI/
 │
 ├── ml/                        # ML модели и скрипты
 │   ├── models/                # Веса предобученных моделей
-│   │   └── ColorizeStable_gen.pth  # Модель DeOldify
+│   │   └── ColorAize_weights.pth  # Модель DeOldify
 │   ├── scripts/
 │   │   └── download_model.py  # Скрипт загрузки модели
 │   ├── dummy/                 # Dummy директория для DeOldify
@@ -128,7 +128,7 @@ npm run dev
 
 **3. Загрузка модели (если еще не загружена):**
 ```bash
-python ml/scripts/download_model.py ColorizeStable_gen
+python ml/scripts/download_model.py ColorAize_weights
 ```
 
 ## 📦 Установка
@@ -164,10 +164,10 @@ npm install
 
 **4. Загрузка модели:**
 ```bash
-python ml/scripts/download_model.py ColorizeStable_gen
+python ml/scripts/download_model.py ColorAize_weights
 ```
 
-Модель будет загружена в `ml/models/ColorizeStable_gen.pth` (~1.5GB).
+Модель будет загружена в `ml/models/ColorAize_weights.pth` (~1.5GB).
 
 ## ⚙️ Конфигурация
 
@@ -178,7 +178,7 @@ python ml/scripts/download_model.py ColorizeStable_gen
 ```env
 # Backend
 DATABASE_URL=sqlite:///./backend/colorizer.db
-DEOLDIFY_MODEL_PATH=./ml/models/ColorizeStable_gen.pth
+DEOLDIFY_MODEL_PATH=./ml/models/ColorAize_weights.pth
 PORT=8000
 HOST=0.0.0.0
 
@@ -188,7 +188,7 @@ VITE_API_URL=http://localhost:8000
 
 ### Конфигурация модели
 
-По умолчанию используется модель `ColorizeStable_gen.pth`. Чтобы использовать художественную модель:
+По умолчанию используется модель `ColorAize_weights.pth`. Чтобы использовать художественную модель:
 
 1. Загрузите модель:
 ```bash
@@ -345,12 +345,12 @@ docker-compose up -d
 
 **Решение:**
 ```bash
-python ml/scripts/download_model.py ColorizeStable_gen
+python ml/scripts/download_model.py ColorAize_weights
 ```
 
 Проверьте, что файл существует:
 ```bash
-ls -lh ml/models/ColorizeStable_gen.pth
+ls -lh ml/models/ColorAize_weights.pth
 ```
 
 ### DeOldify не установлен

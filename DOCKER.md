@@ -26,7 +26,7 @@ docker-compose up -d
 
 ```bash
 # Скачать модель (займет 5-15 минут, ~1.5 GB)
-python ml/scripts/download_model.py ColorizeStable_gen
+python ml/scripts/download_model.py ColorAize_weights
 
 # Или художественную модель (более яркие цвета)
 python ml/scripts/download_model.py ColorizeArtistic_gen

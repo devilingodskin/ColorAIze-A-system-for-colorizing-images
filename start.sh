@@ -41,9 +41,9 @@ if [ ! -d "node_modules" ]; then
 fi
 
 # Check if model exists
-if [ ! -f "ml/models/ColorizeStable_gen.pth" ] && [ ! -f "ml/models/ColorizeArtistic_gen.pth" ]; then
+if [ ! -f "ml/models/ColorAize_weights.pth" ] && [ ! -f "ml/models/ColorizeArtistic_gen.pth" ]; then
     echo "⚠️  Model not found. Please download it:"
-    echo "   python ml/scripts/download_model.py ColorizeStable_gen"
+    echo "   python ml/scripts/download_model.py ColorAize_weights"
     echo ""
     read -p "Continue anyway? (y/n) " -n 1 -r
     echo
